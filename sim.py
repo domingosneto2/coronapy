@@ -45,6 +45,11 @@ def add_arrays_wp(a1, a2):
 
     return c
 
+
+def running_mean(x, N):
+    cumsum = np.cumsum(np.insert(x, 0, 0))
+    return (cumsum[N:] - cumsum[:-N]) / float(N)
+
 #############################################################################################
 # Random population generation and selection functions
 #############################################################################################
@@ -88,6 +93,47 @@ class Normal:
         return np.random.choice(len(probs), num_samples, False, probs)
 
 
+# Some testing functions to validate the distributions above.  Not used in real code.
+def plot_cdf(distribution, max_value = None):
+    bins = 50
+    pop = distribution.generate_population(1000000)
+    histogram = np.histogram(pop, bins, density=True)
+    sum = np.sum(histogram[0])
+    cumsum = np.cumsum(histogram[0])
+    probs = cumsum * 1 / sum
+
+    y = list()
+    y.append(0)
+    y.extend(probs)
+    x = histogram[1]
+    output_file("dist.html")
+    p = figure(title="Distribution", x_axis_label='X', y_axis_label='Y')
+    p.y_range = Range1d(0, 1.1)
+    if max_value is not None:
+        p.x_range = Range1d(0, max_value)
+    p.line(x, y, line_width=2, line_color="blue")
+
+    show(p)
+
+
+def plot_pdf(distribution, max_value = None):
+    pop = distribution.generate_population(1000000)
+    histogram = np.histogram(pop, 100, density=True)
+    x = histogram[1]
+    y = histogram[0]
+    output_file("dist.html")
+    p = figure(title="Distribution", x_axis_label='X', y_axis_label='Y')
+    if max_value is not None:
+        p.x_range = Range1d(0, max_value)
+    p.line(x, y, line_width=2, line_color="blue")
+    show(p)
+
+
+#############################################################################################
+# SEIR model logic
+#############################################################################################
+
+
 def run_seir_multiple(population_size, days_exposed, days_infectious, r0, distribution, steps):
     result = run_seir(population_size, days_exposed, days_infectious, r0, distribution)
     log("Ran 1 of ", steps)
@@ -103,11 +149,6 @@ def run_seir_multiple(population_size, days_exposed, days_infectious, r0, distri
             result[i] = [x / steps for x in result[i]]
 
     return result
-
-
-def run_seir_and_plot(population_size, days_exposed, days_infectious, r0, distribution, steps):
-    result = run_seir_multiple(population_size, days_exposed, days_infectious, r0, distribution, steps)
-    generate_seir_chart_from_series(result)
 
 
 def run_seir(population_size, days_exposed, days_infectious, r0, distribution):
@@ -288,13 +329,13 @@ def run_seir(population_size, days_exposed, days_infectious, r0, distribution):
     return [s, e, i, r, er, sr, ir0, ms]
 
 
+#############################################################################################
+# Chart generation code.
+#############################################################################################
+
+
 def generate_seir_chart_from_series(x):
     generate_seir_chart(x[0], x[1], x[2], x[3], x[4], x[5], x[6], x[7])
-
-
-def running_mean(x, N):
-    cumsum = np.cumsum(np.insert(x, 0, 0))
-    return (cumsum[N:] - cumsum[:-N]) / float(N)
 
 
 def generate_seir_chart(s, e, i, r, er, sr, ir0, ms):
@@ -306,11 +347,11 @@ def generate_seir_chart(s, e, i, r, er, sr, ir0, ms):
     p.y_range = Range1d(0, 1.1)
 
     # add a line renderer with legend and line thickness
-    p.line(range(len(s)), s, legend_label="S", line_width=2, line_color="blue")
-    p.line(range(len(e)), e, legend_label="E", line_width=2, line_color="yellow")
-    p.line(range(len(i)), i, legend_label="I", line_width=2, line_color="red")
-    p.line(range(len(r)), r, legend_label="R", line_width=2, line_color="green")
-    p.line(range(len(ms)), ms, legend_label="MS", line_width=2, line_color="blue", line_dash="dashed")
+    p.line(range(len(s)), s, legend_label="Susceptible", line_width=2, line_color="blue")
+    p.line(range(len(e)), e, legend_label="Exposed", line_width=2, line_color="yellow")
+    p.line(range(len(i)), i, legend_label="Infectious", line_width=2, line_color="red")
+    p.line(range(len(r)), r, legend_label="Recovered", line_width=2, line_color="green")
+    p.line(range(len(ms)), ms, legend_label="Mean Susceptibility", line_width=2, line_color="blue", line_dash="dashed")
 
     p.extra_y_ranges = {"r_range": Range1d(start=0, end=np.max(er) * 1.1)}
     extra_axis = LinearAxis(y_range_name="r_range")
@@ -325,56 +366,23 @@ def generate_seir_chart(s, e, i, r, er, sr, ir0, ms):
             log("Next values of er: ", er[index:index+10])
             break
 
-    index=index+1
+    index= index + 1
 
     p.line(range(index, len(er)), er[index:], legend_label="Effective r", line_width=2, line_color="black", y_range_name="r_range")
-    p.line(range(len(sr)), sr, legend_label="Standard r", line_width=2, line_color="black", line_dash='dashed', y_range_name="r_range")
-    p.line(range(index, len(ir0)), ir0[index:], legend_label="Implicit r0", line_width=2, line_color="grey", y_range_name="r_range")
+    # p.line(range(len(sr)), sr, legend_label="Standard r", line_width=2, line_color="black", line_dash='dashed', y_range_name="r_range")
+    # p.line(range(index, len(ir0)), ir0[index:], legend_label="Implicit r0", line_width=2, line_color="grey", y_range_name="r_range")
 
     # show the results
     show(p)
 
 
-def plot_cdf(distribution, max_value = None):
-    bins = 50
-    pop = distribution.generate_population(1000000)
-    histogram = np.histogram(pop, bins, density=True)
-    sum = np.sum(histogram[0])
-    cumsum = np.cumsum(histogram[0])
-    probs = cumsum * 1 / sum
-
-    y = list()
-    y.append(0)
-    y.extend(probs)
-    x = histogram[1]
-    output_file("dist.html")
-    p = figure(title="Distribution", x_axis_label='X', y_axis_label='Y')
-    p.y_range = Range1d(0, 1.1)
-    if max_value is not None:
-        p.x_range = Range1d(0, max_value)
-    p.line(x, y, line_width=2, line_color="blue")
-
-    show(p)
+def plot(result):
+    generate_seir_chart_from_series(result)
 
 
-def plot_pdf(distribution, max_value = None):
-    pop = distribution.generate_population(1000000)
-    histogram = np.histogram(pop, 100, density=True)
-    x = histogram[1]
-    y = histogram[0]
-    output_file("dist.html")
-    p = figure(title="Distribution", x_axis_label='X', y_axis_label='Y')
-    if max_value is not None:
-        p.x_range = Range1d(0, max_value)
-    p.line(x, y, line_width=2, line_color="blue")
-    show(p)
-
-
-run_seir_and_plot(100000, 3, 11, 2.5, Gamma(1, 3), 10)
-# run_seir_and_plot(1000000, 3, 11, 2.5, Constant(1), 1)
-# run_seir(100000, 3, 11, 2.5, Constant(1))
+plot(run_seir_multiple(100000, 3, 11, 2.5, Gamma(1, 3), 10))
+# plot(run_seir_multiple(1000000, 3, 11, 2.5, Constant(1), 1))
 
 
 # plot_cdf(Gamma(1, 2), 20)
 # plot_pdf(Gamma(1, 3), 10)
-# plot_values(Constant(1))
