@@ -68,7 +68,7 @@ class Gamma:
         return np.random.gamma(shape, scale, pop_size)
 
     def select(self, probs, num_samples):
-        return np.random.choice(len(probs), num_samples, False, probs)
+        return np.random.choice(len(probs), num_samples, True, probs)
 
 
 class Constant:
@@ -79,7 +79,7 @@ class Constant:
         return np.full(pop_size, self.value)
 
     def select(self, probs, num_samples):
-        return np.random.choice(len(probs), num_samples, False)
+        return np.random.choice(len(probs), num_samples, True)
 
 
 class Step:
@@ -95,7 +95,7 @@ class Step:
         return population * (1 / np.mean(population))
 
     def select(self, probs, num_samples):
-        return np.random.choice(len(probs), num_samples, False, probs)
+        return np.random.choice(len(probs), num_samples, True, probs)
 
 
 class Normal:
@@ -107,7 +107,7 @@ class Normal:
         return np.random.normal(self.mean, self.stddev, pop_size)
 
     def select(self, probs, num_samples):
-        return np.random.choice(len(probs), num_samples, False, probs)
+        return np.random.choice(len(probs), num_samples, True, probs)
 
 
 # Some testing functions to validate the distributions above.  Not used in real code.
@@ -174,8 +174,7 @@ def run_seir(population_size, days_exposed, days_infectious, r0, distribution):
 
     # Each individual in the population has one attribute: its relative susceptibility.
     pop = distribution.generate_population(population_size)
-    # This is the probability of selection of each individual, when choosing who is going
-    # to be infected.  It has to add up to 1.
+    # Convert the relative susceptibility to a probability of selection of each individual.  It has to add up to 1.
     prob = pop * (1 / np.sum(pop))
 
     # Time series that model the number of individuals in the standard buckets of the SEIR model.
@@ -195,7 +194,7 @@ def run_seir(population_size, days_exposed, days_infectious, r0, distribution):
     # It is not used in the model, we only calculate it to plot the different Rs.
     sr = []
 
-    # Models the evolution of the population mean susceptibility
+    # Captures the evolution of the population mean susceptibility
     ms = []
 
     # Initialize the 'current' values for the time series.
@@ -289,7 +288,7 @@ def run_seir(population_size, days_exposed, days_infectious, r0, distribution):
                         swap(prob, draw, scurr - 1 - num_newly_exposed)
                         num_newly_exposed = num_newly_exposed + 1
 
-        # Do this calculation before updating the current values
+        # Do this calculation before updating icurr and scurr
         if icurr > 0:
             ercurr = num_newly_exposed * days_infectious / icurr
         else:
@@ -332,6 +331,9 @@ def run_seir(population_size, days_exposed, days_infectious, r0, distribution):
         sr.append(srcurr)
         ir0.append(ir0curr)
         ms.append(mscurr)
+
+        if len(s) % 10 == 1:
+            log("t: ", len(s) - 1, "s: ", scurr, "e: ", ecurr, "i: ", icurr, "r: ", rcurr)
 
     # Convert the SEIR series to a number between 0 and 1
     s = [x / population_size for x in s]
@@ -383,7 +385,7 @@ def generate_seir_chart(s, e, i, r, er, sr, ir0, ms):
             log("Next values of er: ", er[index:index+10])
             break
 
-    index= index + 1
+    index = index + 1
 
     # p.line(range(index, len(er)), er[index:], legend_label="Effective r", line_width=2, line_color="black", y_range_name="r_range")
     # p.line(range(len(sr)), sr, legend_label="Standard r", line_width=2, line_color="black", line_dash='dashed', y_range_name="r_range")
@@ -397,7 +399,7 @@ def plot(result):
     generate_seir_chart_from_series(result)
 
 
-plot(run_seir_multiple(100000, 3, 11, 2.5, Gamma(1, 2), 10))
+plot(run_seir_multiple(10000000, 3, 11, 2.5, Gamma(1, 2), 1))
 #plot(run_seir_multiple(100000, 3, 11, 2.5, Step(5, 2), 10))
 #plot(run_seir_multiple(100000, 3, 11, 2.5, Constant(1), 100))
 
