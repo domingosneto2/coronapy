@@ -78,6 +78,7 @@ class Constant:
     def generate_population(self, pop_size):
         return np.full(pop_size, self.value)
 
+    # Do not pass a probability array since it is uniform, makes the selection faster.
     def select(self, probs, num_samples):
         return np.random.choice(len(probs), num_samples, True)
 
@@ -283,7 +284,7 @@ def run_seir(population_size, days_exposed, days_infectious, r0, distribution):
                 for draw in draws:
                     # if this individual is in the susceptible bucket.
                     if draw < scurr - num_newly_exposed:
-                        # move it to the end of array along with the other exposed, infected and cured individuals.
+                        # move it to the end of array along with the other exposed, infected and recovered individuals.
                         swap(pop, draw, scurr - 1 - num_newly_exposed)
                         swap(prob, draw, scurr - 1 - num_newly_exposed)
                         num_newly_exposed = num_newly_exposed + 1
@@ -399,7 +400,7 @@ def plot(result):
     generate_seir_chart_from_series(result)
 
 
-plot(run_seir_multiple(10000000, 3, 11, 2.5, Gamma(1, 2), 1))
+plot(run_seir_multiple(1000000, 3, 11, 2.5, Gamma(1, 2), 1))
 #plot(run_seir_multiple(100000, 3, 11, 2.5, Step(5, 2), 10))
 #plot(run_seir_multiple(100000, 3, 11, 2.5, Constant(1), 100))
 
