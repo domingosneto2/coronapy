@@ -3,6 +3,7 @@ import numpy as np
 from bokeh.plotting import figure, output_file, show
 from bokeh.models import LinearAxis, Range1d
 from datetime import datetime
+import math
 
 #############################################################################################
 # Utility functions
@@ -79,6 +80,22 @@ class Constant:
 
     def select(self, probs, num_samples):
         return np.random.choice(len(probs), num_samples, False)
+
+
+class Step:
+    def __init__(self, steps, factor):
+        self.steps = steps
+        self.factor = factor
+
+    def generate_population(self, pop_size):
+        population = np.full(pop_size, 1)
+        for i in range(0, pop_size):
+            step = int(i * self.steps / pop_size)
+            population[i] = math.pow(self.factor, step)
+        return population * (1 / np.mean(population))
+
+    def select(self, probs, num_samples):
+        return np.random.choice(len(probs), num_samples, False, probs)
 
 
 class Normal:
@@ -340,7 +357,7 @@ def generate_seir_chart_from_series(x):
 
 def generate_seir_chart(s, e, i, r, er, sr, ir0, ms):
     # output to static HTML file
-    output_file("lines.html")
+    output_file("lines-2.html")
 
     # create a new plot with a title and axis labels
     p = figure(title="simple line example", x_axis_label='Days', y_axis_label='Population')
@@ -353,10 +370,10 @@ def generate_seir_chart(s, e, i, r, er, sr, ir0, ms):
     p.line(range(len(r)), r, legend_label="Recovered", line_width=2, line_color="green")
     p.line(range(len(ms)), ms, legend_label="Mean Susceptibility", line_width=2, line_color="blue", line_dash="dashed")
 
-    p.extra_y_ranges = {"r_range": Range1d(start=0, end=np.max(er) * 1.1)}
-    extra_axis = LinearAxis(y_range_name="r_range")
-    extra_axis.axis_label = "R"
-    p.add_layout(extra_axis, 'right')
+    # p.extra_y_ranges = {"r_range": Range1d(start=0, end=np.max(er) * 1.1)}
+    # extra_axis = LinearAxis(y_range_name="r_range")
+    # extra_axis.axis_label = "R"
+    # p.add_layout(extra_axis, 'right')
 
     # Remove initial values for er and ir0
     for index in range(len(i)):
@@ -368,7 +385,7 @@ def generate_seir_chart(s, e, i, r, er, sr, ir0, ms):
 
     index= index + 1
 
-    p.line(range(index, len(er)), er[index:], legend_label="Effective r", line_width=2, line_color="black", y_range_name="r_range")
+    # p.line(range(index, len(er)), er[index:], legend_label="Effective r", line_width=2, line_color="black", y_range_name="r_range")
     # p.line(range(len(sr)), sr, legend_label="Standard r", line_width=2, line_color="black", line_dash='dashed', y_range_name="r_range")
     # p.line(range(index, len(ir0)), ir0[index:], legend_label="Implicit r0", line_width=2, line_color="grey", y_range_name="r_range")
 
@@ -380,9 +397,10 @@ def plot(result):
     generate_seir_chart_from_series(result)
 
 
-plot(run_seir_multiple(100000, 3, 11, 2.5, Gamma(1, 3), 10))
-# plot(run_seir_multiple(1000000, 3, 11, 2.5, Constant(1), 1))
+plot(run_seir_multiple(100000, 3, 11, 2.5, Gamma(1, 2), 10))
+#plot(run_seir_multiple(100000, 3, 11, 2.5, Step(5, 2), 10))
+#plot(run_seir_multiple(100000, 3, 11, 2.5, Constant(1), 100))
 
 
-# plot_cdf(Gamma(1, 2), 20)
-# plot_pdf(Gamma(1, 3), 10)
+# plot_cdf(Step(3, 2), 5)
+# plot_pdf(Step(5, 2), 10)
