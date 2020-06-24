@@ -98,8 +98,9 @@ def run_seir_multiple(population_size, days_exposed, days_infectious, r0, distri
         for j in range(len(r2)):
             result[j] = add_arrays_wp(result[j], r2[j])
 
-    for i in range(len(result)):
-        result[i] = [x / steps for x in result[i]]
+    if steps > 1:
+        for i in range(len(result)):
+            result[i] = [x / steps for x in result[i]]
 
     return result
 
@@ -369,7 +370,7 @@ def plot_pdf(distribution, max_value = None):
     show(p)
 
 
-run_seir_and_plot(100000, 3, 11, 2, Gamma(1, 2), 50)
+run_seir_and_plot(100000, 3, 11, 2.5, Gamma(1, 3), 10)
 # run_seir_and_plot(1000000, 3, 11, 2.5, Constant(1), 1)
 # run_seir(100000, 3, 11, 2.5, Constant(1))
 
