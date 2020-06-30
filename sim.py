@@ -904,7 +904,7 @@ def run():
     #
 
     pop_params = relative_population_params(100000, 0, 0, .25, .5, 0.001, 0.004)
-    # global_params = GlobalParameters(3, 11, 2.5, Gamma(1, math.sqrt(1/3)))
+    global_params = GlobalParameters(3, 11, 2.5, Gamma(1, math.sqrt(1/3)))
 
     # global_params = GlobalParameters(3, 11, 2.5, Constant(1))
     start = datetime.now()
